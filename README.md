@@ -167,6 +167,43 @@ npm start
 
 The server will start on the port specified in `.env` (default: 3000).
 
+## Checking If Bot Is Live
+
+### Quick Status Check
+```bash
+# Run the automated status checker
+npm run check:live
+
+# Or directly
+node check-live-status.js
+```
+
+This will check:
+- ✓ Environment configuration
+- ✓ Local server status
+- ✓ WhatsApp API connectivity
+- ✓ Webhook accessibility
+- ✓ Dependencies installation
+
+### Web Dashboard
+Once the server is running, visit:
+- **Local**: http://localhost:3000/status.html
+- **Production**: https://yourdomain.com/status.html
+
+### API Status Endpoint
+```bash
+curl http://localhost:3000/status
+```
+
+Returns JSON with:
+- Deployment status (live/offline/partial)
+- Environment configuration
+- Active users count
+- Service health indicators
+- Uptime information
+
+For detailed status information, see [LIVE_STATUS.md](LIVE_STATUS.md)
+
 ## Testing
 
 1. **Local Testing**: Use ngrok to expose local server to internet

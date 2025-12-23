@@ -35,6 +35,9 @@ const app = express();
 // Middleware
 app.use(express.json());
 
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Store raw body for webhook signature verification
 app.use((req, res, next) => {
   let rawBody = '';
@@ -213,6 +216,7 @@ async function processMessageChange(messageChange) {
 /**
  * GET /status
  * Check bot status and statistics
+ * Enhanced to include deployment and configuration status
  */
 app.get('/status', (req, res) => {
   const users = UserStorage.getAllUsers();
@@ -222,17 +226,44 @@ app.get('/status', (req, res) => {
     stateDistribution[user.state] = (stateDistribution[user.state] || 0) + 1;
   });
 
+  // Check configuration status
+  const hasWhatsAppConfig = !!(config.whatsapp.phoneNumberId && config.whatsapp.accessToken);
+  const hasWebhookConfig = !!config.webhook.verifyToken;
+  const isProduction = config.server.env === 'production';
+
+  // Calculate uptime
+  const uptime = process.uptime();
+  const uptimeFormatted = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
+
   res.json({
     status: 'operational',
-    timestamp: new Date().toISOString(),
+    deployment: {
+      isLive: hasWhatsAppConfig && hasWebhookConfig,
+      environment: config.server.env,
+      version: '1.0.0',
+      uptime: uptimeFormatted,
+      uptimeSeconds: Math.floor(uptime)
+    },
+    configuration: {
+      whatsappConfigured: hasWhatsAppConfig,
+      webhookConfigured: hasWebhookConfig,
+      phoneNumberId: config.whatsapp.phoneNumberId ? 
+        config.whatsapp.phoneNumberId.substring(0, 10) + '...' : 'not configured',
+      port: config.server.port
+    },
     users: {
       total: users.length,
+      active: users.filter(u => u.state !== STATES.CONFIRMED).length,
+      completed: users.filter(u => u.state === STATES.CONFIRMED).length,
       stateDistribution
     },
     service: {
-      whatsapp: 'connected',
-      reminders: 'active'
-    }
+      whatsapp: hasWhatsAppConfig ? 'connected' : 'not configured',
+      reminders: config.features.remindersEnabled ? 'active' : 'disabled',
+      storage: 'in-memory'
+    },
+    timestamp: new Date().toISOString(),
+    serverTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
   });
 });
 

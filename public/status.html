@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Hotel Bot - Live Status</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            margin: 20px 0;
+        }
+
+        .status-live {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-offline {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status-partial {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status-loading {
+            background: #6b7280;
+            color: white;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric-card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .metric-label {
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .metric-subtext {
+            color: #9ca3af;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .service-status {
+            margin: 30px 0;
+        }
+
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .service-item:last-child {
+            border-bottom: none;
+        }
+
+        .service-name {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .service-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .dot-green {
+            background: #10b981;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+        }
+
+        .dot-red {
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+        }
+
+        .dot-yellow {
+            background: #f59e0b;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+            display: block;
+            margin: 30px auto 0;
+        }
+
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+
+        .refresh-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .timestamp {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 WhatsApp Hotel Booking Bot</h1>
+            <p class="subtitle">Live Status Dashboard</p>
+            <div id="statusBadge" class="status-badge status-loading">Checking Status...</div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Environment</div>
+                <div class="metric-value" id="environment">--</div>
+                <div class="metric-subtext" id="version">Version --</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Active Users</div>
+                <div class="metric-value" id="activeUsers">--</div>
+                <div class="metric-subtext" id="totalUsers">-- total conversations</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Uptime</div>
+                <div class="metric-value" id="uptime">--</div>
+                <div class="metric-subtext" id="serverTime">--</div>
+            </div>
+        </div>
+
+        <div class="service-status">
+            <h3 style="margin-bottom: 15px; color: #374151;">Service Status</h3>
+            <div class="service-item">
+                <span class="service-name">Server</span>
+                <span class="service-indicator" id="serverStatus">
+                    <span class="indicator-dot dot-red"></span>
+                    <span>Checking...</span>
+                </span>
+            </div>
+            <div class="service-item">
+                <span class="service-name">WhatsApp API</span>
+                <span class="service-indicator" id="whatsappStatus">
+                    <span class="indicator-dot dot-red"></span>
+                    <span>Checking...</span>
+                </span>
+            </div>
+            <div class="service-item">
+                <span class="service-name">Webhook</span>
+                <span class="service-indicator" id="webhookStatus">
+                    <span class="indicator-dot dot-red"></span>
+                    <span>Checking...</span>
+                </span>
+            </div>
+            <div class="service-item">
+                <span class="service-name">Reminders</span>
+                <span class="service-indicator" id="reminderStatus">
+                    <span class="indicator-dot dot-red"></span>
+                    <span>Checking...</span>
+                </span>
+            </div>
+        </div>
+
+        <button class="refresh-btn" onclick="checkStatus()">Refresh Status</button>
+
+        <div class="timestamp" id="lastUpdated">Last updated: Never</div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            const errorMessage = document.getElementById('errorMessage');
+            const statusBadge = document.getElementById('statusBadge');
+
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = 'Checking...';
+            errorMessage.style.display = 'none';
+            statusBadge.className = 'status-badge status-loading loading';
+            statusBadge.textContent = 'Checking Status...';
+
+            try {
+                const response = await fetch('/status');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                // Update status badge
+                if (data.deployment.isLive) {
+                    statusBadge.className = 'status-badge status-live';
+                    statusBadge.textContent = '✓ Bot is LIVE';
+                } else if (data.status === 'operational') {
+                    statusBadge.className = 'status-badge status-partial';
+                    statusBadge.textContent = '⚠ Partially Configured';
+                } else {
+                    statusBadge.className = 'status-badge status-offline';
+                    statusBadge.textContent = '✗ Bot is OFFLINE';
+                }
+
+                // Update metrics
+                document.getElementById('environment').textContent = data.deployment.environment;
+                document.getElementById('version').textContent = `Version ${data.deployment.version}`;
+                document.getElementById('activeUsers').textContent = data.users.active || 0;
+                document.getElementById('totalUsers').textContent = `${data.users.total} total conversations`;
+                document.getElementById('uptime').textContent = data.deployment.uptime || '--';
+                document.getElementById('serverTime').textContent = data.serverTime || '--';
+
+                // Update service indicators
+                updateServiceStatus('serverStatus', data.status === 'operational', data.status);
+                updateServiceStatus('whatsappStatus', data.configuration.whatsappConfigured, 
+                    data.configuration.whatsappConfigured ? 'Connected' : 'Not Configured');
+                updateServiceStatus('webhookStatus', data.configuration.webhookConfigured,
+                    data.configuration.webhookConfigured ? 'Configured' : 'Not Configured');
+                updateServiceStatus('reminderStatus', data.service.reminders === 'active',
+                    data.service.reminders);
+
+                // Update timestamp
+                const now = new Date();
+                document.getElementById('lastUpdated').textContent = 
+                    `Last updated: ${now.toLocaleTimeString()}`;
+
+            } catch (error) {
+                console.error('Error checking status:', error);
+                errorMessage.textContent = `❌ Error: ${error.message}. The bot server may not be running.`;
+                errorMessage.style.display = 'block';
+                statusBadge.className = 'status-badge status-offline';
+                statusBadge.textContent = '✗ Bot is OFFLINE';
+                
+                // Update all indicators to offline
+                updateServiceStatus('serverStatus', false, 'Offline');
+                updateServiceStatus('whatsappStatus', false, 'Unknown');
+                updateServiceStatus('webhookStatus', false, 'Unknown');
+                updateServiceStatus('reminderStatus', false, 'Unknown');
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = 'Refresh Status';
+            }
+        }
+
+        function updateServiceStatus(elementId, isActive, text) {
+            const element = document.getElementById(elementId);
+            const dot = element.querySelector('.indicator-dot');
+            const textSpan = element.querySelector('span:last-child');
+
+            if (isActive) {
+                dot.className = 'indicator-dot dot-green';
+            } else if (text.toLowerCase().includes('not configured') || text.toLowerCase().includes('unknown')) {
+                dot.className = 'indicator-dot dot-yellow';
+            } else {
+                dot.className = 'indicator-dot dot-red';
+            }
+
+            textSpan.textContent = text;
+        }
+
+        // Check status on page load
+        window.addEventListener('DOMContentLoaded', checkStatus);
+
+        // Auto-refresh every 30 seconds
+        setInterval(checkStatus, 30000);
+    </script>
+</body>
+</html>
