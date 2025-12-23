@@ -35,6 +35,11 @@ export class MessageHandler {
       let response = null;
       let nextState = null;
 
+      console.log(`\n🤖 Processing message for ${phoneNumber}:`);
+      console.log(`   Message: ${message}`);
+      console.log(`   Type: ${messageType}`);
+      console.log(`   Current State: ${user.state}`);
+
       // Add message to conversation
       UserStorage.addMessage(phoneNumber, 'user', message, messageType);
 
@@ -47,13 +52,20 @@ export class MessageHandler {
 
       // Update state if needed
       if (nextState) {
+        console.log(`   Next State: ${nextState}`);
         UserStorage.updateState(phoneNumber, nextState);
       }
 
       // Send response
       if (response) {
-        await this.whatsappService.sendTextMessage(phoneNumber, response);
-        UserStorage.addMessage(phoneNumber, 'bot', response, 'text');
+        console.log(`   Bot Response: "${response.substring(0, 50)}..."`);
+        const sendResult = await this.whatsappService.sendTextMessage(phoneNumber, response);
+        if (sendResult.success) {
+          console.log(`   ✓ Response sent successfully`);
+          UserStorage.addMessage(phoneNumber, 'bot', response, 'text');
+        } else {
+          console.error(`   ✗ Failed to send response: ${sendResult.error}`);
+        }
       }
 
       return { success: true, state: nextState || user.state };

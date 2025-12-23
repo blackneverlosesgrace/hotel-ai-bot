@@ -14,6 +14,10 @@ export class WhatsAppService {
   // Send text message
   async sendTextMessage(recipientPhoneNumber, text) {
     try {
+      console.log(`📤 Sending text message to ${recipientPhoneNumber}`);
+      console.log(`Token: ${this.accessToken ? '✓ Present' : '✗ Missing'}`);
+      console.log(`Phone ID: ${this.phoneNumberId}`);
+
       const response = await axios.post(
         `${BASE_URL}/${this.phoneNumberId}/messages`,
         {
@@ -33,13 +37,16 @@ export class WhatsAppService {
         }
       );
 
+      console.log(`✓ Text message sent successfully to ${recipientPhoneNumber}`);
       return {
         success: true,
         messageId: response.data.messages[0].id,
         data: response.data
       };
     } catch (error) {
-      console.error('Error sending text message:', error.response?.data || error.message);
+      console.error(`✗ Error sending text message to ${recipientPhoneNumber}:`);
+      console.error(`  Status: ${error.response?.status}`);
+      console.error(`  Error: ${JSON.stringify(error.response?.data || error.message)}`);
       return {
         success: false,
         error: error.response?.data?.error?.message || error.message
