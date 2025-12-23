@@ -3,15 +3,15 @@
 export const config = {
   // WhatsApp API Configuration
   whatsapp: {
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
-    businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
-    accessToken: process.env.WHATSAPP_API_TOKEN,
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID?.trim(),
+    businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID?.trim(),
+    accessToken: process.env.WHATSAPP_API_TOKEN?.trim(),
     apiVersion: 'v18.0'
   },
 
   // Webhook Configuration
   webhook: {
-    verifyToken: process.env.WEBHOOK_VERIFY_TOKEN,
+    verifyToken: process.env.WEBHOOK_VERIFY_TOKEN?.trim(),
     port: process.env.PORT || 3000,
     path: '/webhook'
   },
