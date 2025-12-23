@@ -3,7 +3,7 @@
 import axios from 'axios';
 
 const API_VERSION = 'v18.0';
-const BASE_URL = `https://graph.instagram.com/${API_VERSION}`;
+const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
 
 export class WhatsAppService {
   constructor(phoneNumberId, accessToken) {

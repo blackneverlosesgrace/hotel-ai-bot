@@ -75,7 +75,7 @@ try {
   const token = process.env.WHATSAPP_API_TOKEN;
   
   const response = await axios.get(
-    `https://graph.instagram.com/v18.0/${phoneId}`,
+    `https://graph.facebook.com/v18.0/${phoneId}`,
     {
       params: { access_token: token },
       timeout: 5000
