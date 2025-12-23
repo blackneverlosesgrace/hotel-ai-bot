@@ -101,7 +101,7 @@ export class MessageHandler {
         return this.handleLocationInput(user, cleanText);
 
       case STATES.PAYMENT_CHOICE:
-        return this.handlePaymentChoiceInput(user, cleanText);
+        return await this.handlePaymentChoiceInput(user, cleanText);
 
       case STATES.WAITING_SCREENSHOT:
         return {
