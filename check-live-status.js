@@ -490,7 +490,8 @@ async function main() {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMainModule) {
   main().catch(error => {
     console.error(`${colors.red}Fatal error:${colors.reset}`, error.message);
     process.exit(1);

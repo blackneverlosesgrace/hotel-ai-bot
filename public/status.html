@@ -350,12 +350,16 @@
             const dot = element.querySelector('.indicator-dot');
             const textSpan = element.querySelector('span:last-child');
 
+            // Determine status based on both isActive flag and text content
             if (isActive) {
                 dot.className = 'indicator-dot dot-green';
-            } else if (text.toLowerCase().includes('not configured') || text.toLowerCase().includes('unknown')) {
-                dot.className = 'indicator-dot dot-yellow';
             } else {
-                dot.className = 'indicator-dot dot-red';
+                // Check if it's a configuration issue (yellow) or an error (red)
+                const textLower = String(text).toLowerCase();
+                const isConfigIssue = textLower === 'not configured' || 
+                                     textLower === 'unknown' || 
+                                     textLower === 'checking...';
+                dot.className = isConfigIssue ? 'indicator-dot dot-yellow' : 'indicator-dot dot-red';
             }
 
             textSpan.textContent = text;
