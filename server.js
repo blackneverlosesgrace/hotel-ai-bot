@@ -5,10 +5,14 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 
 // Get current directory for ES6 modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load package.json for version info
+const packageJson = JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -34,6 +38,9 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Store raw body for webhook signature verification
 app.use((req, res, next) => {
@@ -213,6 +220,7 @@ async function processMessageChange(messageChange) {
 /**
  * GET /status
  * Check bot status and statistics
+ * Enhanced to include deployment and configuration status
  */
 app.get('/status', (req, res) => {
   const users = UserStorage.getAllUsers();
@@ -222,17 +230,44 @@ app.get('/status', (req, res) => {
     stateDistribution[user.state] = (stateDistribution[user.state] || 0) + 1;
   });
 
+  // Check configuration status
+  const hasWhatsAppConfig = !!(config.whatsapp.phoneNumberId && config.whatsapp.accessToken);
+  const hasWebhookConfig = !!config.webhook.verifyToken;
+  const isProduction = config.server.env === 'production';
+
+  // Calculate uptime
+  const uptime = process.uptime();
+  const uptimeFormatted = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
+
   res.json({
     status: 'operational',
-    timestamp: new Date().toISOString(),
+    deployment: {
+      isLive: hasWhatsAppConfig && hasWebhookConfig,
+      environment: config.server.env,
+      version: packageJson.version,
+      uptime: uptimeFormatted,
+      uptimeSeconds: Math.floor(uptime)
+    },
+    configuration: {
+      whatsappConfigured: hasWhatsAppConfig,
+      webhookConfigured: hasWebhookConfig,
+      phoneNumberId: config.whatsapp.phoneNumberId ? 
+        config.whatsapp.phoneNumberId.substring(0, 10) + '...' : 'not configured',
+      port: config.server.port
+    },
     users: {
       total: users.length,
+      active: users.filter(u => u.state !== STATES.CONFIRMED).length,
+      completed: users.filter(u => u.state === STATES.CONFIRMED).length,
       stateDistribution
     },
     service: {
-      whatsapp: 'connected',
-      reminders: 'active'
-    }
+      whatsapp: hasWhatsAppConfig ? 'connected' : 'not configured',
+      reminders: config.features.remindersEnabled ? 'active' : 'disabled',
+      storage: 'in-memory'
+    },
+    timestamp: new Date().toISOString(),
+    serverTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
   });
 });
 
