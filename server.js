@@ -5,10 +5,14 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 
 // Get current directory for ES6 modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load package.json for version info
+const packageJson = JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '.env') });
@@ -240,7 +244,7 @@ app.get('/status', (req, res) => {
     deployment: {
       isLive: hasWhatsAppConfig && hasWebhookConfig,
       environment: config.server.env,
-      version: '1.0.0',
+      version: packageJson.version,
       uptime: uptimeFormatted,
       uptimeSeconds: Math.floor(uptime)
     },
