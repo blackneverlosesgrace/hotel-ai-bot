@@ -219,8 +219,22 @@ export class WhatsAppService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error marking message as read:', error.message);
-      return { success: false, error: error.message };
+      const status = error.response?.status;
+      const data = error.response?.data;
+
+      // Meta occasionally rejects mark-as-read (e.g., invalid/old message_id).
+      // This should never block the main message flow.
+      console.warn('Error marking message as read:', {
+        status,
+        message: error.message,
+        data
+      });
+
+      return {
+        success: false,
+        status,
+        error: data?.error?.message || error.message
+      };
     }
   }
 

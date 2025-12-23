@@ -136,7 +136,10 @@ async function processMessageChange(messageChange) {
     console.log(`Type: ${message.type}`);
 
     // Mark message as read
-    await whatsappService.markMessageAsRead(messageId);
+    if (typeof messageId === 'string' && messageId.startsWith('wamid.')) {
+      // Non-blocking: don't let mark-as-read failures delay responses
+      void whatsappService.markMessageAsRead(messageId);
+    }
 
     // Route based on message type
     let messageContent = '';
