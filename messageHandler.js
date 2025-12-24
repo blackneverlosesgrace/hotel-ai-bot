@@ -32,6 +32,13 @@ export class MessageHandler {
   async handleMessage(phoneNumber, message, messageType = 'text') {
     try {
       const user = UserStorage.getUser(phoneNumber);
+      
+      // Ensure user has a state initialized (default to START for new users)
+      if (!user.state) {
+        UserStorage.updateState(phoneNumber, STATES.START);
+        user.state = STATES.START;
+      }
+      
       let response = null;
       let nextState = null;
 
@@ -110,9 +117,10 @@ export class MessageHandler {
         };
 
       default:
+        // Fallback: if state is undefined or unknown, treat as START
         return {
-          response: MESSAGES.error,
-          nextState: null
+          response: MESSAGES.greeting,
+          nextState: STATES.CHECKIN
         };
     }
   }
