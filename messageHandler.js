@@ -20,6 +20,8 @@ import {
 } from './utils.js';
 
 import UserStorage from './userStorage.js';
+import groqService from './groqService.js';
+import { config } from './config.js';
 
 const MESSAGES = getMessages();
 
@@ -88,6 +90,11 @@ export class MessageHandler {
     const cleanText = text.trim();
     const state = user.state;
 
+    // Use AI Chat if enabled
+    if (config.features.aiChat && state === STATES.START) {
+      return await this.handleAIChatMode(user, cleanText);
+    }
+
     switch (state) {
       case STATES.START:
         return { response: MESSAGES.greeting, nextState: STATES.CHECKIN };
@@ -122,6 +129,53 @@ export class MessageHandler {
           response: MESSAGES.greeting,
           nextState: STATES.CHECKIN
         };
+    }
+  }
+
+  // Handle AI Chat mode - natural conversation while collecting booking data
+  async handleAIChatMode(user, userMessage) {
+    try {
+      // Get AI response and extracted data
+      const { response, extractedData } = await groqService.generateResponse(
+        userMessage,
+        {
+          bookingData: user.bookingData,
+          conversation: user.conversation
+        }
+      );
+
+      // Update booking data with extracted information
+      if (Object.keys(extractedData).length > 0) {
+        UserStorage.updateBookingData(user.phoneNumber, extractedData);
+      }
+
+      // Check if booking is complete
+      const updatedUser = UserStorage.getUser(user.phoneNumber);
+      if (groqService.isBookingComplete(updatedUser.bookingData)) {
+        // Calculate price and move to payment
+        const price = getPrice(
+          updatedUser.bookingData.guestCount,
+          updatedUser.bookingData.roomType
+        );
+        UserStorage.updateBookingData(user.phoneNumber, { price });
+        
+        return {
+          response: groqService.generateConfirmation(updatedUser.bookingData),
+          nextState: STATES.PAYMENT_CHOICE
+        };
+      }
+
+      // Continue in START state for natural conversation
+      return {
+        response: response,
+        nextState: null // Stay in START state
+      };
+    } catch (error) {
+      console.error('AI Chat error:', error);
+      return {
+        response: MESSAGES.error,
+        nextState: null
+      };
     }
   }
 

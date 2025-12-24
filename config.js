@@ -29,11 +29,18 @@ export const config = {
     format: 'json'
   },
 
+  // AI Configuration (Groq)
+  ai: {
+    groqApiKey: process.env.GROQ_API_KEY?.trim(),
+    enabled: !!process.env.GROQ_API_KEY?.trim()
+  },
+
   // Feature flags
   features: {
     remindersEnabled: true,
     screenshotValidation: false, // No ML validation, just acceptance
-    hotelCallNotification: true
+    hotelCallNotification: true,
+    aiChat: !!process.env.GROQ_API_KEY?.trim() // Enable AI chat if key provided
   }
 };
 
