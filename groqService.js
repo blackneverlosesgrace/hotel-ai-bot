@@ -4,13 +4,9 @@
 import axios from 'axios';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 export class GroqService {
   constructor() {
-    if (!GROQ_API_KEY) {
-      console.warn('⚠️ GROQ_API_KEY not set - AI chat disabled');
-    }
   }
 
   /**
@@ -20,6 +16,8 @@ export class GroqService {
    * @returns {Promise<{response: string, extractedData: Object}>}
    */
   async generateResponse(userMessage, userContext = {}) {
+      console.log('⚠️ No GROQ_API_KEY found, using fallback');
+    const GROQ_API_KEY = process.env.GROQ_API_KEY?.trim();
     if (!GROQ_API_KEY) {
       return {
         response: '🙏 नमस्ते! कृपया होटल बुकिंग के लिए अपनी जानकारी साझा करें।',
@@ -28,13 +26,16 @@ export class GroqService {
     }
 
     try {
+        console.log('✅ Groq API Key found, calling Groq...');
+        console.log('   Message:', userMessage);
+      
       // Build conversation history
       const messages = this.buildMessages(userMessage, userContext);
 
       const response = await axios.post(
         GROQ_API_URL,
         {
-          model: 'mixtral-8x7b-32768', // Fast & powerful free model
+          model: 'llama-3.1-8b-instant', // Current free model
           messages: messages,
           temperature: 0.7,
           max_tokens: 500,
@@ -57,7 +58,14 @@ export class GroqService {
         extractedData: extractedData
       };
     } catch (error) {
-      console.error('Groq API error:', error.message);
+      console.error('❌ Groq API error:', error.message);
+      if (error.response) {
+        console.error('   Status:', error.response.status);
+        console.error('   Data:', error.response.data);
+      } else if (error.code) {
+        console.error('   Code:', error.code);
+      }
+      console.error('   Stack:', error.stack);
       return {
         response: '😊 मुझे समझ नहीं आया। कृपया दोबारा कहें।',
         extractedData: {}
